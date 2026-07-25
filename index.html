@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlainInvoice — free invoice maker. No signup, no watermark, no catch.</title>
+<meta name="description" content="Make a professional invoice in 60 seconds. Free, no account, no watermark. Everything stays in your browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='15' y='5' width='70' height='90' rx='4' fill='%23FDFCF7' stroke='%231E3A34' stroke-width='6'/><line x1='30' y1='30' x2='70' y2='30' stroke='%23C24E33' stroke-width='8'/><line x1='30' y1='50' x2='70' y2='50' stroke='%231E3A34' stroke-width='6'/><line x1='30' y1='68' x2='55' y2='68' stroke='%231E3A34' stroke-width='6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --desk:#1E3A34;        /* banker's-desk green */
+    --desk-edge:#162B26;
+    --paper:#FDFCF7;
+    --ink:#1A2B27;
+    --ink-soft:#5C6B66;
+    --rule:#DDD9CB;        /* hairline form rules */
+    --carbon:#F2D98D;      /* yellow duplicate sheet */
+    --stamp:#C2402A;       /* rubber-stamp red */
+    --stamp-dark:#A33322;
+    --paper-dim:#F1EFE6;
+  }
+  *{margin:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none!important} }
+  body{
+    background:
+      radial-gradient(120% 90% at 50% 0%, #24463F 0%, var(--desk) 55%, var(--desk-edge) 100%);
+    color:var(--ink);
+    font-family:'Archivo',system-ui,sans-serif;
+    font-variation-settings:'wdth' 100;
+    min-height:100vh;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:28px 20px 90px}
+
+  /* ── chrome ─────────────────────────────── */
+  header.app-chrome{display:flex;justify-content:space-between;align-items:center;margin-bottom:44px}
+  .brand{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--paper);text-transform:uppercase;text-decoration:none}
+  .brand b{color:var(--carbon);font-weight:600}
+  .exp-link{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:var(--carbon);text-decoration:none;border-bottom:1px dashed rgba(242,217,141,.5);padding-bottom:2px}
+  .exp-link:hover{border-bottom-style:solid}
+
+  .lede{text-align:center;margin-bottom:34px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.28em;color:var(--carbon);text-transform:uppercase;margin-bottom:14px}
+  h1{
+    font-family:'Archivo';font-variation-settings:'wdth' 72;
+    font-weight:850;font-size:clamp(34px,6vw,54px);line-height:1.02;
+    color:var(--paper);text-transform:uppercase;letter-spacing:.01em;
+  }
+  .lede p{color:rgba(253,252,247,.75);font-size:16px;margin-top:14px}
+
+  /* ── toolbar ────────────────────────────── */
+  .toolbar{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+    margin-bottom:26px;
+  }
+  .toolbar .grp{display:flex;align-items:center;gap:6px;background:rgba(253,252,247,.08);border:1px solid rgba(253,252,247,.16);border-radius:8px;padding:6px 10px}
+  .toolbar label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:rgba(253,252,247,.65);text-transform:uppercase}
+  .toolbar select,.toolbar input[type=number]{
+    background:transparent;border:none;color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:13px;width:auto;
+  }
+  .toolbar select option{color:var(--ink)}
+  .toolbar input[type=number]{width:52px}
+  button{font-family:'IBM Plex Mono',monospace;cursor:pointer}
+  .btn{
+    border:1px solid rgba(253,252,247,.25);background:rgba(253,252,247,.08);color:var(--paper);
+    border-radius:8px;padding:9px 14px;font-size:12.5px;letter-spacing:.05em;
+    transition:background .15s;
+  }
+  .btn:hover{background:rgba(253,252,247,.16)}
+  .btn-stamp{
+    background:var(--stamp);border-color:var(--stamp-dark);color:#FFF6EF;font-weight:600;
+    box-shadow:0 2px 0 var(--stamp-dark);
+  }
+  .btn-stamp:hover{background:#D14A32}
+  .btn-stamp:active{transform:translateY(1px);box-shadow:0 1px 0 var(--stamp-dark)}
+  :focus-visible{outline:2px solid var(--carbon);outline-offset:2px;border-radius:4px}
+
+  /* ── the paper ──────────────────────────── */
+  .stack{position:relative;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))}
+  .stack::before{ /* yellow customer copy peeking beneath */
+    content:"";position:absolute;inset:10px -7px -9px 9px;
+    background:var(--carbon);border-radius:3px;transform:rotate(.5deg);z-index:0;
+  }
+  .perf{ /* perforated pad edge */
+    position:relative;z-index:1;height:16px;background:var(--paper-dim);
+    border-radius:3px 3px 0 0;
+    background-image:radial-gradient(circle at 8px 8px, var(--desk-edge) 2.6px, transparent 3px);
+    background-size:22px 16px;background-position:4px 0;
+  }
+  .paper{
+    position:relative;z-index:1;background:var(--paper);border-radius:0 0 3px 3px;
+    padding:clamp(24px,5vw,56px);
+  }
+
+  .inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:34px;flex-wrap:wrap}
+  .inv-title{
+    font-family:'Archivo';font-variation-settings:'wdth' 68;font-weight:800;
+    font-size:clamp(28px,5vw,40px);letter-spacing:.06em;text-transform:uppercase;
+  }
+  .inv-meta{font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-align:right;display:grid;gap:4px}
+  .inv-meta .row{display:flex;gap:10px;justify-content:flex-end}
+  .inv-meta .k{color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;padding-top:2px}
+
+  .parties{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:34px}
+  @media(max-width:560px){.parties{grid-template-columns:1fr}}
+  .party .k{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-soft);border-bottom:1px solid var(--rule);padding-bottom:6px;margin-bottom:10px;
+  }
+  [contenteditable]{outline:none;border-radius:2px;min-height:1.2em}
+  [contenteditable]:hover{background:rgba(30,58,52,.045)}
+  [contenteditable]:focus{background:rgba(242,217,141,.28)}
+  [contenteditable]:empty::before{content:attr(data-ph);color:#A9B2AD;pointer-events:none}
+  .party [contenteditable]{font-size:14.5px;line-height:1.55;white-space:pre-wrap}
+
+  table.items{width:100%;border-collapse:collapse;margin-bottom:8px}
+  .items th{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-soft);text-align:left;padding:0 8px 8px 0;border-bottom:1.5px solid var(--ink);
+  }
+  .items th.num,.items td.num{text-align:right}
+  .items td{padding:10px 8px 10px 0;border-bottom:1px solid var(--rule);font-size:14.5px;vertical-align:top}
+  .items td.num{font-family:'IBM Plex Mono',monospace;font-size:13.5px;white-space:nowrap}
+  .items td .amt{color:var(--ink)}
+  .items .del{
+    border:none;background:none;color:transparent;font-size:15px;padding:0 2px;line-height:1;
+  }
+  .items tr:hover .del{color:#B44}
+  .add-line{
+    border:1px dashed var(--rule);background:none;color:var(--ink-soft);width:100%;
+    padding:9px;border-radius:4px;font-size:12px;letter-spacing:.08em;margin-top:6px;
+  }
+  .add-line:hover{border-color:var(--ink-soft);color:var(--ink)}
+
+  .totals{display:flex;justify-content:flex-end;margin-top:22px;position:relative}
+  .totals table{font-family:'IBM Plex Mono',monospace;font-size:13.5px;border-collapse:collapse}
+  .totals td{padding:5px 0 5px 34px;text-align:right}
+  .totals td.k{color:var(--ink-soft);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .totals tr.grand td{border-top:1.5px solid var(--ink);font-size:17px;font-weight:600;padding-top:9px}
+
+  .stamp-paid{
+    position:absolute;right:8px;top:-14px;transform:rotate(-11deg);
+    font-family:'Archivo';font-variation-settings:'wdth' 70;font-weight:850;font-size:30px;
+    letter-spacing:.18em;color:var(--stamp);border:3.5px solid var(--stamp);
+    border-radius:6px;padding:2px 14px;opacity:0;pointer-events:none;
+    mix-blend-mode:multiply;
+    print-color-adjust:exact;-webkit-print-color-adjust:exact;
+  }
+  .is-paid .stamp-paid{opacity:.82}
+
+  .notes{margin-top:36px;padding-top:16px;border-top:1px solid var(--rule)}
+  .notes .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+  .notes [contenteditable]{font-size:13.5px;line-height:1.6;color:var(--ink)}
+
+  /* ── below the paper ────────────────────── */
+  .privacy{
+    text-align:center;margin:26px 0 60px;font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:rgba(253,252,247,.6);letter-spacing:.04em;
+  }
+  section.story{
+    background:var(--carbon);border-radius:3px;padding:30px clamp(22px,4vw,40px);
+    transform:rotate(-.4deg);max-width:640px;margin:0 auto 54px;
+    box-shadow:0 10px 24px rgba(0,0,0,.28);
+  }
+  .story h2{font-family:'Archivo';font-variation-settings:'wdth' 72;font-weight:800;text-transform:uppercase;font-size:20px;letter-spacing:.04em;margin-bottom:10px}
+  .story p{font-size:14.5px;line-height:1.65;color:#4A3F1D}
+  .story .cta-row{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+  .story .btn-stamp{border-radius:6px}
+  .story .muted{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6B5D2E;align-self:center}
+  .faq{max-width:640px;margin:0 auto;display:grid;gap:14px}
+  .faq div{color:rgba(253,252,247,.78);font-size:14px;line-height:1.6}
+  .faq b{color:var(--paper);display:block;font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+  footer{margin-top:64px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(253,252,247,.4);letter-spacing:.08em}
+
+  /* ── print: the paper is everything ─────── */
+  @media print{
+    body{background:#fff}
+    .app-chrome,.lede,.toolbar,.privacy,.story,.faq,footer,.perf,.add-line,.items .del{display:none!important}
+    .wrap{padding:0;max-width:none}
+    .stack{filter:none}
+    .stack::before{display:none}
+    .paper{padding:0;border-radius:0}
+    [contenteditable]:empty{display:none}
+    [contenteditable]:hover,[contenteditable]:focus{background:none}
+    @page{margin:0.6in}
+  }
+  @media(max-width:560px){
+    .inv-meta{text-align:left}
+    .inv-meta .row{justify-content:flex-start}
+    .stamp-paid{font-size:22px;top:-10px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-chrome">
+    <a class="brand" href="/">PLAIN<b>INVOICE</b></a>
+    <a class="exp-link" href="#story">the $20 experiment →</a>
+  </header>
+
+  <div class="lede app-chrome">
+    <div class="eyebrow">Free · No signup · No watermark · No catch</div>
+    <h1>Type on the paper.<br>Print. Get paid.</h1>
+    <p>A real invoice in 60 seconds. It never leaves your browser.</p>
+  </div>
+
+  <div class="toolbar app-chrome" role="toolbar" aria-label="Invoice controls">
+    <button class="btn" id="btnNew">New invoice</button>
+    <div class="grp">
+      <label for="currency">Currency</label>
+      <select id="currency" aria-label="Currency">
+        <option value="USD" selected>$ USD</option>
+        <option value="EUR">€ EUR</option>
+        <option value="GBP">£ GBP</option>
+        <option value="CAD">$ CAD</option>
+        <option value="AUD">$ AUD</option>
+      </select>
+    </div>
+    <div class="grp">
+      <label for="taxRate">Tax %</label>
+      <input type="number" id="taxRate" value="0" min="0" max="99" step="0.1" aria-label="Tax percent">
+    </div>
+    <button class="btn" id="btnPaid" aria-pressed="false">Stamp PAID</button>
+    <button class="btn btn-stamp" id="btnPrint">Print / Save PDF</button>
+  </div>
+
+  <div class="stack">
+    <div class="perf" aria-hidden="true"></div>
+    <div class="paper" id="paper">
+      <div class="inv-head">
+        <div class="inv-title">Invoice</div>
+        <div class="inv-meta">
+          <div class="row"><span class="k">No.</span><span contenteditable data-k="invno" data-ph="0001" spellcheck="false"></span></div>
+          <div class="row"><span class="k">Issued</span><span contenteditable data-k="issued" data-ph="Jul 25, 2026" spellcheck="false"></span></div>
+          <div class="row"><span class="k">Due</span><span contenteditable data-k="due" data-ph="On receipt" spellcheck="false"></span></div>
+        </div>
+      </div>
+
+      <div class="parties">
+        <div class="party">
+          <div class="k">From</div>
+          <div contenteditable data-k="from" data-ph="Your name or business
+Street address
+City, State ZIP
+email · phone"></div>
+        </div>
+        <div class="party">
+          <div class="k">Bill to</div>
+          <div contenteditable data-k="billto" data-ph="Client name
+Company
+Street address
+City, State ZIP"></div>
+        </div>
+      </div>
+
+      <table class="items" aria-label="Line items">
+        <thead>
+          <tr>
+            <th style="width:52%">Description</th>
+            <th class="num">Qty</th>
+            <th class="num">Rate</th>
+            <th class="num">Amount</th>
+            <th style="width:20px"></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <button class="add-line app-chrome-inline" id="btnAdd">+ add line</button>
+
+      <div class="totals">
+        <div class="stamp-paid" aria-hidden="true">Paid</div>
+        <table>
+          <tr><td class="k">Subtotal</td><td id="subtotal">$0.00</td></tr>
+          <tr id="taxRow" hidden><td class="k">Tax (<span id="taxPct">0</span>%)</td><td id="taxAmt">$0.00</td></tr>
+          <tr class="grand"><td class="k">Total</td><td id="grand">$0.00</td></tr>
+        </table>
+      </div>
+
+      <div class="notes">
+        <div class="k">Notes / payment details</div>
+        <div contenteditable data-k="notes" data-ph="Payment accepted via — · Thank you for your business."></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="privacy">🔒 Everything stays on this device. No account, no server, no tracking — we couldn't read your data if we wanted to.</p>
+
+  <section class="story" id="story">
+    <h2>Why is this free?</h2>
+    <p>An AI (Claude Fable 5) was given $20 and one week to earn money — legally, from scratch, with a human allowed only to click "approve." On day one it built this tool and gave it away, betting that being genuinely useful beats being annoying. Every dollar is tracked publicly.</p>
+    <div class="cta-row">
+      <a class="btn btn-stamp" id="tipBtn" href="" hidden>Tip the robot — $5</a>
+      <span class="muted" id="packNote">Pro template pack — coming this week</span>
+    </div>
+    <p style="margin-top:14px"><a href="/experiment.html" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#4A3F1D;font-weight:600">→ watch the live scoreboard</a></p>
+  </section>
+
+  <div class="faq">
+    <div><b>Is it really free?</b>Yes. No trial, no locked features, no watermark. If it saved you time, there's a tip jar — that's the whole business model.</div>
+    <div><b>Where does my data go?</b>Nowhere. It's saved in your own browser (localStorage) so your invoice is still here tomorrow. Clear your browser data and it's gone.</div>
+    <div><b>How do I get a PDF?</b>Hit Print / Save PDF and choose "Save as PDF." The page prints clean — paper only, no interface.</div>
+  </div>
+
+  <footer>PLAININVOICE · built by an AI with $20 · <a href="/experiment.html" style="color:inherit">live scoreboard</a></footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var TIP_URL = "";   // set when checkout link exists → button appears
+  var LS_KEY = "plaininvoice.v1";
+
+  var rowsEl = document.getElementById("rows");
+  var currencyEl = document.getElementById("currency");
+  var taxEl = document.getElementById("taxRate");
+
+  function fmt(n){
+    try{
+      return new Intl.NumberFormat(undefined,{style:"currency",currency:currencyEl.value}).format(n);
+    }catch(e){ return "$"+n.toFixed(2); }
+  }
+  function parseNum(s){
+    var n = parseFloat(String(s).replace(/[^0-9.\-]/g,""));
+    return isFinite(n) ? n : 0;
+  }
+
+  function addRow(data){
+    data = data || {};
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td contenteditable data-r="desc" data-ph="Describe the work" spellcheck="false"></td>'+
+      '<td class="num" contenteditable data-r="qty" data-ph="1" spellcheck="false"></td>'+
+      '<td class="num" contenteditable data-r="rate" data-ph="0.00" spellcheck="false"></td>'+
+      '<td class="num"><span class="amt">—</span></td>'+
+      '<td><button class="del" title="Remove line" aria-label="Remove line">✕</button></td>';
+    tr.querySelector('[data-r=desc]').textContent = data.desc || "";
+    tr.querySelector('[data-r=qty]').textContent  = data.qty  || "";
+    tr.querySelector('[data-r=rate]').textContent = data.rate || "";
+    tr.querySelector(".del").addEventListener("click",function(){
+      tr.remove(); recalc(); save();
+    });
+    rowsEl.appendChild(tr);
+  }
+
+  function recalc(){
+    var subtotal = 0;
+    rowsEl.querySelectorAll("tr").forEach(function(tr){
+      var qtyRaw = tr.querySelector('[data-r=qty]').textContent.trim();
+      var qty = qtyRaw === "" ? 1 : parseNum(qtyRaw);
+      var rate = parseNum(tr.querySelector('[data-r=rate]').textContent);
+      var amt = qty * rate;
+      tr.querySelector(".amt").textContent = rate ? fmt(amt) : "—";
+      subtotal += amt;
+    });
+    var pct = parseNum(taxEl.value);
+    var tax = subtotal * pct / 100;
+    document.getElementById("subtotal").textContent = fmt(subtotal);
+    document.getElementById("taxRow").hidden = !pct;
+    document.getElementById("taxPct").textContent = pct;
+    document.getElementById("taxAmt").textContent = fmt(tax);
+    document.getElementById("grand").textContent = fmt(subtotal + tax);
+  }
+
+  function collect(){
+    var o = {fields:{},rows:[],currency:currencyEl.value,tax:taxEl.value,
+             paid:document.getElementById("paper").parentElement.classList.contains("is-paid")};
+    document.querySelectorAll("[data-k]").forEach(function(el){ o.fields[el.dataset.k] = el.innerText; });
+    rowsEl.querySelectorAll("tr").forEach(function(tr){
+      o.rows.push({
+        desc: tr.querySelector('[data-r=desc]').textContent,
+        qty:  tr.querySelector('[data-r=qty]').textContent,
+        rate: tr.querySelector('[data-r=rate]').textContent
+      });
+    });
+    return o;
+  }
+  var saveT;
+  function save(){
+    clearTimeout(saveT);
+    saveT = setTimeout(function(){
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(collect())); }catch(e){}
+    },250);
+  }
+  function restore(){
+    var raw = null;
+    try{ raw = localStorage.getItem(LS_KEY); }catch(e){}
+    if(!raw){ seed(); return; }
+    try{
+      var o = JSON.parse(raw);
+      currencyEl.value = o.currency || "USD";
+      taxEl.value = o.tax || 0;
+      document.querySelectorAll("[data-k]").forEach(function(el){
+        if(o.fields && o.fields[el.dataset.k]) el.innerText = o.fields[el.dataset.k];
+      });
+      (o.rows && o.rows.length ? o.rows : [{}]).forEach(addRow);
+      if(o.paid) setPaid(true);
+    }catch(e){ seed(); }
+  }
+  function seed(){
+    var d = new Date();
+    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    document.querySelector('[data-k=issued]').textContent = months[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear();
+    document.querySelector('[data-k=invno]').textContent =
+      "" + d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0") + "-01";
+    addRow(); addRow();
+  }
+
+  function setPaid(on){
+    var stack = document.getElementById("paper").parentElement;
+    stack.classList.toggle("is-paid", on);
+    document.getElementById("btnPaid").setAttribute("aria-pressed", String(on));
+    document.getElementById("btnPaid").textContent = on ? "Unstamp PAID" : "Stamp PAID";
+  }
+
+  /* wire up */
+  document.getElementById("btnAdd").addEventListener("click",function(){ addRow(); save(); });
+  document.getElementById("btnPrint").addEventListener("click",function(){ window.print(); });
+  document.getElementById("btnPaid").addEventListener("click",function(){
+    setPaid(!document.getElementById("paper").parentElement.classList.contains("is-paid")); save();
+  });
+  document.getElementById("btnNew").addEventListener("click",function(){
+    if(!confirm("Start a fresh invoice? The current one will be cleared.")) return;
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    rowsEl.innerHTML = "";
+    document.querySelectorAll("[data-k]").forEach(function(el){ el.innerText = ""; });
+    setPaid(false); seed(); recalc();
+  });
+  currencyEl.addEventListener("change",function(){ recalc(); save(); });
+  taxEl.addEventListener("input",function(){ recalc(); save(); });
+  document.addEventListener("input",function(e){
+    if(e.target.closest("[contenteditable]")){ recalc(); save(); }
+  });
+  /* keep pasted content plain-text */
+  document.addEventListener("paste",function(e){
+    var t = e.target.closest("[contenteditable]");
+    if(!t) return;
+    e.preventDefault();
+    var text = (e.clipboardData || window.clipboardData).getData("text/plain");
+    document.execCommand("insertText", false, text);
+  });
+
+  if(TIP_URL){
+    var b = document.getElementById("tipBtn");
+    b.href = TIP_URL; b.hidden = false;
+  }
+
+  restore(); recalc();
+})();
+</script>
+</body>
+</html>
